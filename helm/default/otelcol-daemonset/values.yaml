@@ -39,6 +39,9 @@ alternateConfig:
       headers:
         Mackerel-Api-Key: ${env:MACKEREL_APIKEY}
 
+  extensions:
+    health_check:
+
   service:
     extensions:
       - health_check
