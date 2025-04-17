@@ -3,7 +3,7 @@ image:
   repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
 
 extraEnvs:
-  - name: OTEL_RESOURCE_ATTRIBUTES
+  - name: OTEL_RESOURCE_ATTRIBUTESg
     value: service.namespace=arthur-lke,service.name=worker-node
   - name: MACKEREL_APIKEY
     valueFrom:
@@ -25,6 +25,7 @@ alternateConfig:
 
   processors:
     batch/metrics:
+      send_batch_size: 5000
       send_batch_max_size: 5000
     resourcedetection:
       detectors: [env, system]
@@ -39,13 +40,13 @@ alternateConfig:
         Mackerel-Api-Key: ${env:MACKEREL_APIKEY}
 
   service:
+    extensions:
+      - health_check
     pipelines:
-      traces: null
       metrics:
         receivers: [hostmetrics]
         processors: [batch/metrics, resourcedetection]
         exporters: [otlp/mackerel]
-      logs: null
 
 ports:
   jaeger-compact:
