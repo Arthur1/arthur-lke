@@ -45,7 +45,9 @@ config:
       send_batch_size: 5000
       send_batch_max_size: 5000
     resourcedetection:
-      detectors: [env, k8snode]
+      detectors: [env, system]
+      system:
+        hostname_sources: [os]
     resource:
       attributes:
         - key: service.name
