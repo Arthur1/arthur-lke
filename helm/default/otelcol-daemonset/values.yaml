@@ -2,6 +2,19 @@ mode: daemonset
 image:
   repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
 
+resources:
+  limits:
+    cpu: 100m
+    memory: 200M
+
+presets:
+  hostMetrics:
+    enabled: true
+  kubernetesAttributes:
+    enabled: true
+  kubeletMetrics:
+    enabled: true
+
 extraEnvs:
   - name: MACKEREL_APIKEY
     valueFrom:
@@ -17,64 +30,15 @@ extraEnvs:
       fieldRef:
         fieldPath: status.hostIP
 
-extraVolumes:
-  - name: hostfs
-    hostPath:
-      path: /
-extraVolumeMounts:
-  - name: hostfs
-    mountPath: /hostfs
-    readOnly: true
-    mountPropagation: HostToContainer
-
-alternateConfig:
+config:
   receivers:
-    hostmetrics:
+    hostMetrics:
       collection_interval: 1m
-      root_path: /hostfs
-      scrapers:
-        cpu:
-        disk:
-        load:
-        filesystem:
-          exclude_fs_types:
-            match_type: strict
-            fs_types:
-              - autofs
-              - binfmt_misc
-              - bpf
-              - cgroup2
-              - configfs
-              - debugfs
-              - devpts
-              - devtmpfs
-              - fusectl
-              - hugetlbfs
-              - iso9660
-              - mqueue
-              - nsfs
-              - overlay
-              - proc
-              - procfs
-              - pstore
-              - rpc_pipefs
-              - securityfs
-              - selinuxfs
-              - squashfs
-              - sysfs
-              - tracefs
-          exclude_mount_points:
-            match_type: regexp
-            mount_points:
-              - /dev/*
-              - /proc/*
-              - /sys/*
-              - /run/k3s/containerd/*
-              - /var/lib/docker/*
-              - /var/lib/kubelet/*
-              - /snap/*
-        memory:
-        network:
+    kubeletstats:
+      collection_interval: 1m
+    jaeger: null
+    prometheus: null
+    zipkin: null
 
   processors:
     batch/metrics:
@@ -98,18 +62,14 @@ alternateConfig:
       headers:
         Mackerel-Api-Key: ${env:MACKEREL_APIKEY}
 
-  extensions:
-    health_check:
-      endpoint: ${env:MY_POD_IP}:13133
-
   service:
-    extensions:
-      - health_check
     pipelines:
       metrics:
         receivers: [hostmetrics]
-        processors: [batch/metrics, resourcedetection, resource]
+        processors: [batch/metrics, resourcedetection, resource, k8sattributes]
         exporters: [otlp/mackerel]
+      traces: null
+      logs: null
 
 ports:
   jaeger-compact:
