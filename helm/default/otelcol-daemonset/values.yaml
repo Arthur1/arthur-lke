@@ -3,9 +3,9 @@ image:
   repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
 
 extraEnvs:
-  OTEL_RESOURCE_ATTRIBUTES:
+  - name: OTEL_RESOURCE_ATTRIBUTES
     value: service.namespace=arthur-lke,service.name=worker-node
-  MACKEREL_APIKEY:
+  - name: MACKEREL_APIKEY
     valueFrom:
       secretKeyRef:
         name: mackerel-arthur-1
