@@ -32,7 +32,7 @@ extraEnvs:
 
 config:
   receivers:
-    hostMetrics:
+    hostmetrics:
       collection_interval: 1m
     kubeletstats:
       collection_interval: 1m
