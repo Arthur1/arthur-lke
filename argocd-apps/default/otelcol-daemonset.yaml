@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otelcol-daemonset
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+      chart: opentelemetry-collector
+      targetRevision: 0.122.0
+      helm:
+        valueFiles:
+          - $repo/helm/default/otelcol-daemonset/values.yaml
+    - repoURL: https://github.com/Arthur1/arthur-lke.git
+      targetRevision: main
+      ref: repo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: opentelemetry
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

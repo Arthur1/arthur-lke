@@ -1,0 +1,58 @@
+mode: daemonset
+image:
+  repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
+
+extraEnvs:
+  OTEL_RESOURCE_ATTRIBUTES:
+    value: service.namespace=arthur-lke,service.name=worker-node
+  MACKEREL_APIKEY:
+    valueFrom:
+      secretKeyRef:
+        name: mackerel-arthur-1
+        key: apikey
+
+alternateConfig:
+  receivers:
+    hostmetrics:
+      collection_interval: 1m
+      scrapers:
+        cpu:
+        disk:
+        load:
+        filesystem:
+        memory:
+        network:
+
+  processors:
+    batch/metrics:
+      send_batch_max_size: 5000
+    resourcedetection:
+      detectors: [env, system]
+      system:
+        hostname_sources: [os]
+
+  exporters:
+    otlp/mackerel:
+      endpoint: otlp.mackerelio.com:4317
+      compression: gzip
+      headers:
+        Mackerel-Api-Key: ${env:MACKEREL_APIKEY}
+
+  service:
+    pipelines:
+      traces: null
+      metrics:
+        receivers: [hostmetrics]
+        processors: [batch/metrics, resourcedetection]
+        exporters: [otlp/mackerel]
+      logs: null
+
+ports:
+  jaeger-compact:
+    enabled: false
+  jaeger-thrift:
+    enabled: false
+  jaeger-grpc:
+    enabled: false
+  zipkin:
+    enabled: false
