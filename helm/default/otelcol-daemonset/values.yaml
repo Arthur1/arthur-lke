@@ -3,13 +3,19 @@ image:
   repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
 
 extraEnvs:
-  - name: OTEL_RESOURCE_ATTRIBUTES
-    value: service.namespace=arthur-lke,service.name=worker-node
   - name: MACKEREL_APIKEY
     valueFrom:
       secretKeyRef:
         name: mackerel-arthur-1
         key: apikey
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+  - name: K8S_NODE_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
 
 extraVolumes:
   - name: hostfs
@@ -75,9 +81,15 @@ alternateConfig:
       send_batch_size: 5000
       send_batch_max_size: 5000
     resourcedetection:
-      detectors: [env, system]
-      system:
-        hostname_sources: [os]
+      detectors: [env, k8snode]
+    resource:
+      attributes:
+        - key: service.name
+          value: worker-node
+          action: upsert
+        - key: service.namespace
+          value: arthur-lke
+          action: upsert
 
   exporters:
     otlp/mackerel:
@@ -96,7 +108,7 @@ alternateConfig:
     pipelines:
       metrics:
         receivers: [hostmetrics]
-        processors: [batch/metrics, resourcedetection]
+        processors: [batch/metrics, resourcedetection, resource]
         exporters: [otlp/mackerel]
 
 ports:
