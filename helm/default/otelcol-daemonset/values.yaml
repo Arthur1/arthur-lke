@@ -141,9 +141,8 @@ alternateConfig:
       limit_percentage: 80
       spike_limit_percentage: 25
     resourcedetection:
-      detectors: [system]
-      system:
-        hostname_sources: [os]
+      detectors: [k8snode]
+      override: true
     k8sattributes:
       extract:
         metadata:
