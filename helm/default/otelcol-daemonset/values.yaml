@@ -26,7 +26,6 @@ clusterRole:
     - apiGroups: [""]
       resources: ["nodes/stats"]
       verbs: ["get", "watch", "list"]
-
   clusterRoleBinding:
     annotations: {}
     name: "my-opentelemetry-collector"
@@ -45,6 +44,17 @@ extraEnvs:
     valueFrom:
       fieldRef:
         fieldPath: status.hostIP
+
+extraVolumes:
+  - name: hostfs
+    hostPath:
+      path: /
+
+extraVolumeMounts:
+  - name: hostfs
+    mountPath: /hostfs
+    readOnly: true
+    mountPropagation: HostToContainer
 
 alternateConfig:
   extensions:
@@ -155,6 +165,7 @@ alternateConfig:
       compression: gzip
       headers:
         Mackerel-Api-Key: ${env:MACKEREL_APIKEY}
+    debug:
 
   service:
     extensions:
@@ -168,8 +179,10 @@ alternateConfig:
         receivers: [kubeletstats]
         processors: [batch, k8sattributes, resource/service]
         exporters: [otlp/mackerel]
-      traces: null
-      logs: null
+      traces:
+        exporters: [debug]
+      logs:
+        exporters: [debug]
 
 ports:
   jaeger-compact:
