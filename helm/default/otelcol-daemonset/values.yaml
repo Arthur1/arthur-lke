@@ -112,6 +112,12 @@ alternateConfig:
       collection_interval: 1m
       auth_type: serviceAccount
       endpoint: ${env:K8S_NODE_IP}:10250
+    otlp:
+      protocols:
+        grpc:
+          endpoint: ${env:MY_POD_IP}:4317
+        http:
+          endpoint: ${env:MY_POD_IP}:4318
 
   processors:
     batch:
@@ -179,8 +185,14 @@ alternateConfig:
         receivers: [kubeletstats]
         processors: [batch, k8sattributes, resource/service]
         exporters: [otlp/mackerel]
-      traces: null
-      logs: null
+      traces:
+        receivers: [otlp]
+        processors: []
+        exporters: [debug]
+      logs:
+        receivers: [otlp]
+        processors: []
+        exporters: [debug]
 
 ports:
   jaeger-compact:
