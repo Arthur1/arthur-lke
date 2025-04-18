@@ -179,10 +179,8 @@ alternateConfig:
         receivers: [kubeletstats]
         processors: [batch, k8sattributes, resource/service]
         exporters: [otlp/mackerel]
-      traces:
-        exporters: [debug]
-      logs:
-        exporters: [debug]
+      traces: null
+      logs: null
 
 ports:
   jaeger-compact:
