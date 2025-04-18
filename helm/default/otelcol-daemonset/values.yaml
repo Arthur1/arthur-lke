@@ -112,6 +112,13 @@ alternateConfig:
       collection_interval: 1m
       auth_type: serviceAccount
       endpoint: ${env:K8S_NODE_IP}:10250
+      metrics:
+        k8s.node.cpu.usage: true
+        k8s.node.cpu.utilization: false
+        k8s.pod.cpu.usage: true
+        k8s.pod.cpu.utilization: false
+        container.cpu.usage: true
+        container.cpu.utilization: false
     otlp:
       protocols:
         grpc:
@@ -179,11 +186,11 @@ alternateConfig:
     pipelines:
       metrics/host:
         receivers: [hostmetrics]
-        processors: [batch, resourcedetection, k8sattributes, resource/service]
+        processors: [memory_limiter, resourcedetection, resource/service, batch]
         exporters: [otlp/mackerel]
       metrics/k8s:
         receivers: [kubeletstats]
-        processors: [batch, k8sattributes, resource/service]
+        processors: [memory_limiter, k8sattributes, resource/service, batch]
         exporters: [otlp/mackerel]
       traces:
         receivers: [otlp]
