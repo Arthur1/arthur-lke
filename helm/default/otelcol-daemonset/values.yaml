@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/open-telemetry/opentelemetry-helm-charts/main/charts/opentelemetry-collector/values.schema.json
+
 mode: daemonset
 image:
   repository: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-k8s
@@ -30,25 +32,101 @@ extraEnvs:
       fieldRef:
         fieldPath: status.hostIP
 
-config:
+alternateConfig:
+  extensions:
+    health_check:
+      endpoint: ${env:MY_POD_IP}:13133
+
   receivers:
     hostmetrics:
       collection_interval: 1m
+      root_path: /hostfs
+      scrapers:
+        cpu:
+        disk:
+        filesystem:
+          exclude_fs_types:
+            fs_types:
+              - autofs
+              - binfmt_misc
+              - bpf
+              - cgroup2
+              - configfs
+              - debugfs
+              - devpts
+              - devtmpfs
+              - fusectl
+              - hugetlbfs
+              - iso9660
+              - mqueue
+              - nsfs
+              - overlay
+              - proc
+              - procfs
+              - pstore
+              - rpc_pipefs
+              - securityfs
+              - selinuxfs
+              - squashfs
+              - sysfs
+              - tracefs
+          match_type: strict
+          exclude_mount_points:
+            match_type: regexp
+            mount_points:
+              - /dev/*
+              - /proc/*
+              - /sys/*
+              - /run/k3s/containerd/*
+              - /var/lib/docker/*
+              - /var/lib/kubelet/*
+              - /snap/*
+        load:
+        memory:
+        network:
     kubeletstats:
       collection_interval: 1m
-    jaeger: null
-    prometheus: null
-    zipkin: null
+      auth_type: serviceAccount
+      endpoint: ${env:K8S_NODE_IP}:10250
 
   processors:
-    batch/metrics:
+    batch:
       send_batch_size: 5000
       send_batch_max_size: 5000
+    memory_limiter:
+      check_interval: 5s
+      limit_percentage: 80
+      spike_limit_percentage: 25
     resourcedetection:
-      detectors: [env, system]
+      detectors: [system]
       system:
         hostname_sources: [os]
-    resource:
+    k8sattributes:
+      extract:
+        metadata:
+          - k8s.namespace.name
+          - k8s.deployment.name
+          - k8s.statefulset.name
+          - k8s.daemonset.name
+          - k8s.cronjob.name
+          - k8s.job.name
+          - k8s.node.name
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.pod.start_time
+      filter:
+        node_from_env_var: K8S_NODE_NAME
+      passthrough: false
+      pod_association:
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.ip
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.uid
+        - sources:
+            - from: connection
+    resource/service:
       attributes:
         - key: service.name
           value: worker-node
@@ -65,13 +143,17 @@ config:
         Mackerel-Api-Key: ${env:MACKEREL_APIKEY}
 
   service:
+    extensions:
+      - health_check
     pipelines:
-      metrics:
+      metrics/host:
         receivers: [hostmetrics]
-        processors: [batch/metrics, resourcedetection, resource, k8sattributes]
+        processors: [batch, resourcedetection, k8sattributes, resource/service]
         exporters: [otlp/mackerel]
-      traces: null
-      logs: null
+      metrics/k8s:
+        receivers: [kubeletstats]
+        processors: [batch, k8sattributes, resource/service]
+        exporters: [otlp/mackerel]
 
 ports:
   jaeger-compact:
