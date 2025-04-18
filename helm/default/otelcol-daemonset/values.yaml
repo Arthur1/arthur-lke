@@ -26,6 +26,9 @@ clusterRole:
     - apiGroups: [""]
       resources: ["nodes/stats"]
       verbs: ["get", "watch", "list"]
+    - apiGroups: [""]
+      resources: ["nodes"]
+      verbs: ["get", "list"]
   clusterRoleBinding:
     annotations: {}
     name: "my-opentelemetry-collector"
@@ -143,6 +146,9 @@ alternateConfig:
     resourcedetection:
       detectors: [k8snode]
       override: true
+      k8snode:
+        node_from_env_var: K8S_NODE_NAME
+        auth_type: serviceAccount
     k8sattributes:
       extract:
         metadata:
